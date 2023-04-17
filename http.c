@@ -28,6 +28,7 @@ void socket_listener(socket_t socket) {
     sparse(&data, "\r\n");
     req.body = data;
 
+    free(data);
     request_listener(req);
 }
 
