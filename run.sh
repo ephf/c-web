@@ -1,0 +1,1 @@
+gcc -pthread -lpthread http.c socket.c main.c -o o && ./o

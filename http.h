@@ -4,7 +4,7 @@
 #ifndef HTTP_H
 #define HTTP_H
 
-#define HEADMAX 20
+#define HEADMAX 40
 
 typedef struct {
     char* name;
@@ -12,6 +12,8 @@ typedef struct {
 } header_t;
 
 typedef struct {
+    char* data;
+
     char* method;
     char* url;
     char* httpv;
@@ -29,7 +31,7 @@ typedef struct {
 void request_listener(request_t req);
 
 char* get_header(request_t req, char* name);
-void set_header(request_t req, char* name, char* value);
+void set_header(request_t* req, char* name, char* value);
 void writer(request_t req, char* data);
 void writer_head(request_t req, char* status);
 void endr(request_t req);

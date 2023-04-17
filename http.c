@@ -17,7 +17,7 @@ void socket_listener(socket_t socket) {
     char* data = reads(socket);
     if(data == NULL) closes(socket);
 
-    request_t req = { sparse(&data, " "), sparse(&data, " "), sparse(&data, "\r\n") };
+    request_t req = { data, sparse(&data, " "), sparse(&data, " "), sparse(&data, "\r\n") };
     req.socket = socket;
 
     char* name;
@@ -28,7 +28,6 @@ void socket_listener(socket_t socket) {
     sparse(&data, "\r\n");
     req.body = data;
 
-    free(data);
     request_listener(req);
 }
 
@@ -39,8 +38,8 @@ char* get_header(request_t req, char* name) {
     return NULL;
 }
 
-void set_header(request_t req, char* name, char* value) {
-    req.res_headers[req.total_res_headers++] = (header_t) { name, value };
+void set_header(request_t* req, char* name, char* value) {
+    req->res_headers[req->total_res_headers++] = (header_t) { name, value };
 }
 
 void writer(request_t req, char* data) {
@@ -63,6 +62,7 @@ void writer_head(request_t req, char* status) {
 
 void endr(request_t req) {
     closes(req.socket);
+    free(req.data);
 }
 
 char* readrn(request_t req, int n) {
