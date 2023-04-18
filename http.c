@@ -2,13 +2,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 
-char* sparse(char** str, char* token) {
+char* _sparse(char** str, char* token) {
     char* ptr = *str;
     int tl = strlen(token);
-    for(int i = 0; (*str)[i] != '\0'; i++) {
-        if(strncmp((*str) + i, token, tl) == 0) {
-            memset((*str) + i, 0, tl);
+    for(int i = 0; ptr[i] != '\0'; i++) {
+        if(strncmp(ptr + i, token, tl) == 0) {
+            memset(ptr + i, 0, tl);
             *str += i + tl;
             return ptr;
         }
@@ -18,20 +19,42 @@ char* sparse(char** str, char* token) {
 
 void socket_listener(socket_t socket) {
     char* data = reads(socket);
+    char* initial_data_ptr = data;
     if(data == NULL) closes(socket);
 
-    request_t req = { data, sparse(&data, " "), sparse(&data, " "), sparse(&data, "\r\n") };
-    req.socket = socket;
+    request_t req = { _sparse(&data, " "), _sparse(&data, " "), _sparse(&data, "\r\n"), socket };
+    req.res_headers = malloc(sizeof(header_list_t));
+    req._last_res_header = req.res_headers;
+
+    header_list_t* header_linked_list = malloc(sizeof(header_list_t));
+    header_list_t* header_link = header_linked_list;
 
     char* name;
-    while((name = sparse(&data, ": ")) != NULL) {
-        req.headers[req.total_headers++] = (header_t) { name, sparse(&data, "\r\n") };
+    while((name = _sparse(&data, ": ")) != NULL) {
+        req.total_headers++;
+        header_link->header.name = name;
+        header_link->header.value = _sparse(&data, "\r\n");
+        header_list_t* temp = header_link;
+        temp->next = (header_link = malloc(sizeof(header_list_t)));
     }
 
-    sparse(&data, "\r\n");
+    header_link = header_linked_list;
+
+    header_t headers[req.total_headers];
+    for(int i = 0; i < req.total_headers; i++) {
+        headers[i] = header_link->header;
+        header_list_t* temp = header_link;
+        header_link = header_link->next;
+        free(temp);
+    }
+    free(header_link);
+    req.headers = headers;
+
+    _sparse(&data, "\r\n");
     req.body = data;
 
     request_listener(req);
+    free(initial_data_ptr);
 }
 
 char* get_header(request_t req, char* name) {
@@ -42,7 +65,11 @@ char* get_header(request_t req, char* name) {
 }
 
 void set_header(request_t* req, char* name, char* value) {
-    req->res_headers[req->total_res_headers++] = (header_t) { name, value };
+    req->total_res_headers++;
+    req->_last_res_header->header.name = name;
+    req->_last_res_header->header.value = value;
+    header_list_t* temp = req->_last_res_header;
+    temp->next = (req->_last_res_header = malloc(sizeof(header_list_t)));
 }
 
 void writer(request_t req, char* data) {
@@ -53,19 +80,22 @@ void writer_head(request_t req, char* status) {
     char head[13] = "HTTP/1.1 ";
     writer(req, strcat(head, status));
 
-    for(int i = 0; i < req.total_res_headers; i++) {
-        header_t header = req.res_headers[i];
+    while(req.res_headers != req._last_res_header) {
+        header_t header = req.res_headers->header;
         char header_str[4 + strlen(header.name) + strlen(header.value)];
         sprintf(header_str, "\r\n%s: %s", header.name, header.value);
         writer(req, header_str);
+        header_list_t* temp = req.res_headers;
+        req.res_headers = temp->next;
+        free(temp);
     }
+    free(req.res_headers);
 
     writer(req, "\r\n\r\n");
 }
 
 void endr(request_t req) {
     closes(req.socket);
-    free(req.data);
 }
 
 char* readrn(request_t req, int n) {

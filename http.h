@@ -1,21 +1,21 @@
 #include "socket.h"
-#include <stdarg.h>
 
 #ifndef HTTP_H
 #define HTTP_H
-
-#define HEADMAX 40
 
 typedef struct {
     char* name;
     char* value;
 } header_t;
 
-// Make sure to free request_t.data after use if endr() is not used
-typedef struct {
-    // the initial data pointer (make sure to free if endr() is not used)
-    char* data;
+struct HEADER_LIST;
+typedef struct HEADER_LIST {
+    header_t header;
+    struct HEADER_LIST* next;
+} header_list_t;
 
+// Incomming http request type
+typedef struct {
     char* method;
     char* url;
     // the request's http version (eg. HTTP/1.1)
@@ -25,14 +25,15 @@ typedef struct {
     socket_t socket;
 
     // a list of incomming headers
-    header_t headers[HEADMAX];
+    header_t* headers;
     // the total amount of incomming headers
     int total_headers;
 
     char* body;
 
-    // a list of outgoing headers (response headers)
-    header_t res_headers[HEADMAX];
+    // a list of outgoing headers (response headers) (linked list)
+    header_list_t* res_headers;
+    header_list_t* _last_res_header;
     // the total amount of outgoing headers
     int total_res_headers;
 } request_t;

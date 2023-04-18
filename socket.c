@@ -33,12 +33,11 @@ int start_sockets(char* port) {
 
     printf("socket server listening on port %s\n", port);
 
-    pthread_t tid;
     while(1) {
         socklen_t addrlen = sizeof(struct sockaddr_in);
         long connection = accept(listenfd, NULL, &addrlen);
         if(connection < 0) continue;
-        pthread_create(&tid, NULL, handle_connection, (void*) connection);
+        pthread_create(&s_tid, NULL, handle_connection, (void*) connection);
     }
 }
 
@@ -68,5 +67,4 @@ char* reads(socket_t socket) {
 void closes(socket_t socket) {
     shutdown(socket, SHUT_RDWR);
     close(socket);
-    pthread_exit(NULL);
 }

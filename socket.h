@@ -1,6 +1,9 @@
 #ifndef SOCKET_H
 #define SOCKET_H
 
+#include <pthread.h>
+static pthread_t s_tid;
+
 // a socket from a client (client server connection) (file descriptor)
 typedef int socket_t;
 // start the socket server at a certain port
