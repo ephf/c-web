@@ -82,9 +82,7 @@ void writer_head(request_t req, char* status) {
 
     while(req.res_headers != req._last_res_header) {
         header_t header = req.res_headers->header;
-        char header_str[4 + strlen(header.name) + strlen(header.value)];
-        sprintf(header_str, "\r\n%s: %s", header.name, header.value);
-        writer(req, header_str);
+        rprintf(req, "\r\n%s: %s", header.name, header.value);
         header_list_t* temp = req.res_headers;
         req.res_headers = temp->next;
         free(temp);
